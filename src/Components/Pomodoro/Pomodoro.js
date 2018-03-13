@@ -125,22 +125,23 @@ reset(resetFor = this.state.time) {
     // audio
     if(this.refs.audio.checked) {
       const audio = new Howl({
-        src: ['./../../songs/alarm.mp3'],
-
+        src: ['http://www.sousound.com/music/healing/musicbox_01.mp3'],
       });
       audio.play();
+      setTimeout(() => audio.pause(), 9400)
+
     }
     // notification
     if(this.refs.notification.checked) {
       if (this.state.timeType === 1500) {
         let notification = new Notification("Relax :)", {
-          icon: "./../../img/coffee.png",
+          icon: "http://www.pngmart.com/files/4/Coffee-Cup-PNG-Free-Download.png",
           lang: "pl",
           body: "Gooo talk or drink a coffee."
         });
       } else {
         let notification = new Notification("The time is over!", {
-          icon: "./../../img/code.png",
+          icon: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTorBqYYYajvOmUQXMzWijfe8Mvv6T99yH5avvY2r6mcD6dr_nH",
           lang: "pl",
           body: "Heyyy, back to code!"
         });
