@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="theme-color" content="#000000">
+    <link href='https://fonts.googleapis.com/css?family=Roboto:400,300,900' rel='stylesheet' type='text/css'>
+    <script defer src="https://use.fontawesome.com/releases/v5.0.8/js/all.js"></script>
+    <link rel="shortcut icon" href="">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.20.4/TweenMax.min.js"></script>
+    
+    
+    <title>Pomodoro</title>
+  </head>
+  <body>
+      <div id="burger_icon_wrapper">
+          <svg id="menu_icon" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="80" height="80" viewBox="0 0 80 80" xml:space="preserve">
+            <path id="fillCircle_1" class="fillCircle" d="M40 2C19 2 2 19 2 40s17 38 38 38 38-17 38-38S61 2 40 2z" />
+            <path id="fillCircle_2" class="fillCircle" d="M40 2C19 2 2 19 2 40s17 38 38 38 38-17 38-38S61 2 40 2z" />
+            <path id="strokeCircle_1" class="strokeCircle" d="M40 2C19 2 2 19 2 40s17 38 38 38 38-17 38-38S61 2 40 2z" />
+            <path id="strokeCircle_2" class="strokeCircle" d="M40 2C19 2 2 19 2 40s17 38 38 38 38-17 38-38S61 2 40 2z" />
+            <polyline class="line" points="19,33 40,33 61,33"/>
+            <polyline class="line" points="19,40 40,40 61,40"/>
+            <polyline class="line" points="19,47 40,47 61,47"/>
+          </svg>
+        </div>
+        <div id="test_wrapper">
+          <ul id="test_menu">
+            <div class="menu_line first"></div>
+            <li><a href="https://en.wikipedia.org/wiki/Pomodoro_Technique" target="_blank">What is Pomodoro?</a></li>
+           
+            <div class="menu_line"></div>
+          </ul>
+          <svg id="overlay_menu" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <polyline id="menu_layer" points="0,0 100,0 100,100 100,0"/>
+            <polyline id="menu_layer2" points="0,0 100,0 100,100 100,0"/>
+            <polyline id="menu_layer3" points="0,0 100,0 100,100 100,0"/>
+          </svg>
+        </div>
+    <noscript>
+      You need to enable JavaScript to run this app.
+    </noscript>
+
+    
+    <div id="root"></div>
+<script>
+  ;(function($) {
+
+$.burger_btn = function(el, options) {
+
+    var defaults = {
+        clicked: false,
+        playing: false,
+        speed: .3,
+        clickPlaying: false,
+        isTweening: false
+    }
+
+    var plugin = this;
+    plugin.settings = {}
+
+    //------------------------------------------------------------------------------------------------
+    // Set all Jquery Objects ###################################################################
+    //------------------------------------------------------------------------------------------------
+    var s, $this;
+    var $lines = [];
+    var $strokeCircle = [];
+    var $fillCircle = [];
+    var hoverTL, clickTL, strokeCircleTL, fillCircleTL, fillCircleClickTL, rotatateBefore, rotatateAfter, stretchBurger, menu_tl, menu_fade, negativeBurger, positiveBurger, hoverX;
+    var linesTL = [];
+    var transPointTL = [];
+    var transXYTL = [];
+    var originX, originY, strokeWidth;
+    var fixStr;
+    var testi = false;
+
+    var menuLayerTL1, menuLayerTL2, menuLayer2TL1, menuLayer2TL2, menuLayer3TL1, menuLayer3TL2, master;
+
+
+    var init = function() {
+        plugin.settings = $.extend({}, defaults, options);
+        s = plugin.settings;
+        plugin.el = el;
+        $this = $(plugin.el);
+
+        //------------------------------------------------------------------------------------------------
+        // TEST TIMELINES FOR SVG OVERLAY MENU ###################################################################
+        //------------------------------------------------------------------------------------------------
+        menuLayerTL1 = new TimelineMax();
+        menuLayerTL2 = new TimelineMax();
+        menuTrans( $('#menu_layer'), menuLayerTL1, s.speed, [0,0,100,0,100,100,100,100], Power1.easeIn );
+        menuTrans( $('#menu_layer'), menuLayerTL2, s.speed, [0,0,100,0,100,100,0,100], Power2.easeOut );
+
+        menuLayer2TL1 = new TimelineMax();
+        menuLayer2TL2 = new TimelineMax();
+        menuTrans( $('#menu_layer2'), menuLayer2TL1, s.speed, [0,0,100,0,100,100,100,100], Power2.easeIn );
+        menuTrans( $('#menu_layer2'), menuLayer2TL2, s.speed, [0,0,100,0,100,100,0,100], Power1.easeOut );
+
+        menuLayer3TL1 = new TimelineMax();
+        menuLayer3TL2 = new TimelineMax();
+        menuTrans( $('#menu_layer3'), menuLayer3TL1, s.speed, [0,0,100,0,100,100,100,100], Power2.easeIn );
+        menuTrans( $('#menu_layer3'), menuLayer3TL2, s.speed, [0,0,100,0,100,100,0,100], Power1.easeOut );
+
+        master = new TimelineMax({paused: true, onComplete: setTween, onReverseComplete: setTween});
+        master 
+            .add( menuLayerTL1, 0 )
+            .add( menuLayerTL2, s.speed )
+            .add( menuLayer2TL1, s.speed*.3 )
+            .add( menuLayer2TL2,  s.speed*1.3 )
+            .add( menuLayer3TL1, s.speed*.7 )
+            .add( menuLayer3TL2,  s.speed*1.7 )
+
+        var currentTimeScale = master.timeScale();
+        master.timeScale( 1.2 );
+
+        menu_tl = new TimelineMax({paused: true});
+        menu_tl
+            .fromTo( $('#test_menu'), s.speed, {transformOrigin: "50% -100%", opacity: 0, y: 0, rotation: -90}, {opacity: 0, y: 0, rotation: -45, ease: Power2.easeIn}, s.speed*.5 )
+            .to( $('#test_menu'), s.speed, {transformOrigin: "50% -100%", y: 0, rotation: 0, opacity: 1, ease: Power2.easeOut}, "+=0" )
+            .staggerFromTo( $('#test_menu li'), s.speed, {x: 100, opacity: 0}, {x: 0, opacity: 1, ease: Power2.easeInOut}, .125, "-="+s.speed*1.75+"" )
+            .staggerFromTo( $('.menu_line'), s.speed, {y: 0, opacity: 0}, {y: 0, opacity: .1, ease: Power1.easeInOut}, .6, .4 );
+
+        var currentTimeScale = menu_tl.timeScale();
+        menu_tl.timeScale( 1.2 );
+
+        menu_fade = new TimelineMax({paused: true});
+        menu_fade
+            .staggerFromTo( $('#test_menu li'), s.speed, {y: 0, opacity: 1}, {y: 0, opacity: 0, ease: Power2.easeInOut}, -.1, 0 )
+            .staggerFromTo( $('.menu_line'), s.speed, {y: 0, opacity: .1}, {y: 0, opacity: 0, ease: Power1.easeInOut}, .6, .4 );
+
+        var currentTimeScale = menu_fade.timeScale();
+        menu_fade.timeScale( 1.2 );
+
+        negativeBurger = new TimelineMax({paused: true});
+        negativeBurger
+            .to( [$('#strokeCircle_1'), $('#strokeCircle_2')], s.speed*.5, {stroke: '#a6b1b1', ease: Power1.easeInOut}, 0 )
+            .to( $('.line'), s.speed*.5, {stroke: '#dde5e7', ease: Power1.easeInOut}, 0 )
+            .to( [$('#fillCircle_1'), $('#fillCircle_2')], s.speed*.5, {fill: '#dde5e7', ease: Power1.easeInOut}, 0 )
+            .to( $('#fillCircle_1'), s.speed*.5, {"fill-opacity": .15, ease: Power1.easeInOut}, 0 )
+
+        positiveBurger =  new TimelineMax({paused: true});
+        positiveBurger
+            .to( [$('#strokeCircle_1'), $('#strokeCircle_2')], s.speed*.5, {stroke: '#323549', ease: Power1.easeInOut}, 0 )
+            .to( $('.line'), s.speed*.5, {stroke: '#323549', ease: Power1.easeInOut}, 0 )
+            .to( [$('#fillCircle_1'), $('#fillCircle_2')], s.speed*.5, {fill: '#323549', ease: Power1.easeInOut}, 0 )
+            .to( $('#fillCircle_1'), s.speed*.5, {"fill-opacity": .15, ease: Power1.easeInOut}, 0 )
+
+        hoverX = new TimelineMax({paused: true});
+        hoverX
+            .to( $('.line'), s.speed*1.35, {scale: .901, ease: Power1.easeInOut}, 0)
+
+        //------------------------------------------------------------------------------------------------
+        // Init all Jquery Objects ###################################################################
+        //------------------------------------------------------------------------------------------------
+        $('.line', $this).each(function() {
+            $lines.push( this );
+        });
+        $('.strokeCircle', $this).each(function() {
+            $strokeCircle.push( this );
+        });
+        $('.fillCircle', $this).each(function() {
+            $fillCircle.push( this );
+        });
+
+        //------------------------------------------------------------------------------------------------
+        // Init Timelines ###################################################################
+        //------------------------------------------------------------------------------------------------
+        transPointTL[0] = new TimelineMax({});
+        transPointTL[1] = new TimelineMax({});
+
+        //------------------------------------------------------------------------------------------------
+        // Bind Event Handler ###################################################################
+        //------------------------------------------------------------------------------------------------            
+        $('#menu_icon', $this).bind( 'click', checkClicked );
+        $('#menu_icon', $this).bind( 'mouseenter', mEnter );
+        $('#menu_icon', $this).bind( 'mouseleave', mOut );
+
+        //------------------------------------------------------------------------------------------------
+        // Circle Origins etc. ###################################################################
+        //------------------------------------------------------------------------------------------------  
+        originX = $('#menu_icon').width() * .5;
+        originY = $('#menu_icon').height() * .5;
+        strokeWidth = $('#strokeCricle_1').attr('stroke-width') * .5;
+
+        //------------------------------------------------------------------------------------------------
+        // Set fixString for smoother Animation + Standard Settings for animated Element ###############
+        //------------------------------------------------------------------------------------------------ 
+        fixStr = {z: 0.1, rotationZ: 0.01, force3D: true};
+        TweenMax.set( [$lines[0], $lines[1], $lines[2], $strokeCircle[0], $strokeCircle[1], $fillCircle[0], $fillCircle[1]], fixStr );
+
+        //------------------------------------------------------------------------------------------------
+        // Animate Stroke Circle -> Part of Hover TL ###############################################
+        //------------------------------------------------------------------------------------------------ 
+        TweenMax.set( [$strokeCircle[0], $strokeCircle[1]], {transformOrigin: originX+strokeWidth+"px "+originY+strokeWidth+"px"+" 0px", scaleX: -1, scaleY: 1, rotation: 20} );
+        strokeCircleTL = new TimelineMax({});
+        strokeCircleTL
+            .fromTo($strokeCircle[0], s.speed*.75, {drawSVG: "50%  50%", "stroke-opacity": "0"}, {drawSVG:"50% 30%", "stroke-opacity": "1", ease: Power2.easeIn}, "0" )
+            .fromTo($strokeCircle[1], s.speed*.75, {drawSVG:"100%  100%", "stroke-opacity": "0"}, {drawSVG:"100% 80%", "stroke-opacity": "1", ease: Power2.easeIn}, "0" )
+            .to($strokeCircle[0], s.speed, {drawSVG:"50% 0%", ease: Power2.easeOut}, "+=0" )
+            .to($strokeCircle[1], s.speed, {drawSVG:"100% 50%", ease: Power2.easeOut}, "-="+s.speed+"" )
+        
+        //------------------------------------------------------------------------------------------------
+        // Animate Fill Circle -> Part of Hover TL ###############################################
+        //------------------------------------------------------------------------------------------------ 
+        TweenMax.set( [$fillCircle[0], $fillCircle[1]], {transformOrigin: originX+"px "+originY+"px"+" 0px"} );
+        fillCircleTL = new TimelineMax({});
+        fillCircleTL
+            .fromTo($fillCircle[0], s.speed*.75, {scale: .7501, "fill-opacity": "0"}, {"fill-opacity": "0.05", scale: 1.01, ease: Power2.easeInOut}, 0 )
+
+        //------------------------------------------------------------------------------------------------
+        // Stretch Burger, Part of Hover TL ######################################
+        //------------------------------------------------------------------------------------------------ 
+        stretchBurger = new TimelineMax({paused: true});
+        stretchBurger.to( [$lines[0]], s.speed*1.35, {y: -2, ease: Power1.easeInOut}, 0 );
+        stretchBurger.to( [$lines[2]], s.speed*1.35, {y: 2, ease: Power1.easeInOut}, 0 );
+      
+        //------------------------------------------------------------------------------------------------
+        // Hover TL ############################################################################
+        //------------------------------------------------------------------------------------------------ 
+        hoverTL = new TimelineMax({paused: true});
+        hoverTL
+            .add( strokeCircleTL, "0" )
+            .add( fillCircleTL, "-="+s.speed*1.25+"" )
+
+        //------------------------------------------------------------------------------------------------
+        // rotate Lines before X-Animation, Part of Click TL ######################################
+        //------------------------------------------------------------------------------------------------ 
+        rotatateBefore = new TimelineMax({});
+        TweenMax.set( $lines[0], {transformOrigin: "21px 0px"} );
+        rotatateBefore.to( [$lines[0]], s.speed, {rotation: 89.01, ease: Power2.easeIn}, 0 );
+        TweenMax.set( $lines[1], {transformOrigin: "21px 0px"} );
+        rotatateBefore.to( [$lines[1]], s.speed, {rotation: 89.01, ease: Power2.easeIn}, 0 );
+        TweenMax.set( $lines[2], {transformOrigin: "21px 0px"} );
+        rotatateBefore.to( [$lines[2]], s.speed, {rotation: 89.01, ease: Power2.easeIn}, 0 );
+
+        //------------------------------------------------------------------------------------------------
+        // match 3 Lines to 1, Part of Click TL ######################################
+        //------------------------------------------------------------------------------------------------ 
+        linesTL[0] = new TimelineMax({});
+        linesTL[1] = new TimelineMax({});
+        linesTL[2] = new TimelineMax({});
+        linesTL[0].fromTo( $lines[0], s.speed*.5, {y: 0}, {y: 7, ease: Power2.easeIn}, 0 )
+        linesTL[1].to( $lines[1], s.speed*.5, {drawSVG: "50% 50%", ease: Power2.easeIn}, 0 )
+        linesTL[2].fromTo( $lines[2], s.speed*.5, {y: 0}, {y: -7, ease: Power2.easeInOut}, 0 )
+
+        //------------------------------------------------------------------------------------------------
+        // rotate Lines after X-Animation, Part of Click TL ######################################
+        //------------------------------------------------------------------------------------------------ 
+        rotatateAfter = new TimelineMax({});
+        TweenMax.set( $lines[0], {transformOrigin: "21px 0px"} );
+        rotatateAfter.to( [$lines[0]], s.speed, {rotation: 180.01, ease: Power2.easeOut}, 0 );
+        TweenMax.set( $lines[2], {transformOrigin: "21px 0px"} );
+        rotatateAfter.to( [$lines[2]], s.speed, {rotation: 180.01, ease: Power2.easeOut}, 0 );
+
+        //------------------------------------------------------------------------------------------------
+        // FillCircle on Click, Part of Click TL ######################################
+        //------------------------------------------------------------------------------------------------ 
+        fillCircleClickTL = new TimelineMax({paused: true});
+        fillCircleClickTL
+            .fromTo($fillCircle[1], s.speed*.5, {scale: .7501, "fill-opacity": "0"}, {"fill-opacity": ".4", scale: 1.01, ease: Power2.easeInOut}, 0 )
+            .to($fillCircle[1], s.speed*.5, {opacity: .0, ease: Power2.easeInOut}, "-=0" )
+
+        //------------------------------------------------------------------------------------------------
+        // Click TL ###############################################################
+        //------------------------------------------------------------------------------------------------ 
+        clickTL = new TimelineMax({paused: true, onReverseComplete: setBack});
+        clickTL
+            .add( TweenMax.fromTo( $('#content_wrapper'), 0.01, {"z-index": 1, "position": "absolute"}, {"z-index": -1, "position": "fixed"}, 0) )
+            .add( TweenMax.fromTo( [$('#test_wrapper'), $('#overlay_menu')], 0.01, {"z-index": -1}, {"z-index": 99}, 0) )
+            .add( [linesTL[0], linesTL[2]], 0 )
+            .add( rotatateBefore, 0 )
+            .addCallback( buildTransPoints, "+=0" )
+            .add( linesTL[1], "-="+s.speed*.25+"" )
+            .add( rotatateAfter, "-="+s.speed*.25+"" )
+            .add( [transPointTL[0],transPointTL[1]], "-="+s.speed*.25+"" )
+    }
+
+    function checkClicked() {
+        fillCircleClickTL.restart();
+        if ( !s.clicked ) {
+            if ( !s.isTweening ) {
+                s.isTweening = true;
+                menuOpen();
+            }
+        } else if ( s.clicked ) {
+            if ( !s.isTweening ) {   
+                s.isTweening = true;
+                menuClose();
+            }
+        }
+    }
+
+    function menuOpen() {
+        s.clicked = true;
+        s.playing = true;
+        s.clickPlaying = true;
+        clickTL.play();
+        master.restart();
+        menu_tl.restart();
+        setTimeout(function() {
+            positiveBurger.restart();   
+        }, 200);
+    }
+
+    function menuClose() {
+        s.clicked = false;
+        reverseClickTl();
+        master.reverse();
+        menu_fade.restart();
+        setTimeout(function() {
+            negativeBurger.restart();
+        }, 400);
+    }
+
+    function mEnter() {
+        hoverTL.play();
+        if ( !s.clicked ) {
+            stretchBurger.restart();
+        } else if ( s.clicked ) {
+            hoverX.restart();
+        }
+    }
+
+    function mOut() {
+        hoverTL.reverse();
+         if ( !s.clickPlaying ) {
+            stretchBurger.reverse();
+        } else if ( s.clicked ) {
+            hoverX.reverse();
+        }
+    }
+
+    function pointMove( element, tl, speed, x, y, ease ) {
+        var ease = ease;
+        var startPoints = [];
+        var endPoints = [];
+        startPoints = $(element).attr('points');
+
+        // splits " " and ","
+        startPoints = startPoints.split(/[\s,]+/);
+
+        for(var i = 0; i < startPoints.length; i++){
+            startPoints[i] = parseFloat(startPoints[i]);
+        }
+
+        for ( var i = 0; i < startPoints.length; i++ ) {
+            if ( i == 0 ) {
+                endPoints[i] = startPoints[i] + x;
+            } else if ( i == 1 ) {
+                endPoints[i] = startPoints[i] + y;
+            } else if (i == 4) {
+                endPoints[i] = startPoints[i] - x;
+            } else if (i == 5) {
+                endPoints[i] = startPoints[i] + y;
+            } else {
+                endPoints[i] = startPoints[i]; // + x;
+            }
+        }
+
+        var propStr = endPoints.join(" ");
+        var nth = 0;
+        propStr = propStr.replace(/ /g, function (match, i, original) {
+            nth++;
+            return (nth%2 == 1) ? "," : match;
+        });
+
+        tl.clear();
+        tl.to( element, s.speed, {attr: {"points" : propStr}, ease: ease} );
+    }
+
+     function menuTrans( element, tl, speed, endPoints, ease ) {
+        var ease = ease;
+        var startPoints = [];
+        var endPoints = endPoints;
+        startPoints = $(element).attr('points');
+
+        // splits " " and ","
+        startPoints = startPoints.split(/[\s,]+/);
+
+        for(var i=0; i < startPoints.length; i++){
+            startPoints[i] = parseFloat(startPoints[i]);
+        }
+
+        var propStr = endPoints.join(" ");
+        var nth = 0;
+        propStr = propStr.replace(/ /g, function (match, i, original) {
+            nth++;
+            return (nth%2 == 1) ? "," : match;
+        });
+
+        tl.clear();
+        tl.to( element, speed, {attr: {"points" : propStr}, ease: ease} );
+    }
+
+    function reverseClickTl() {
+        s.playing = false;
+        clickTL.reverse();
+    }
+
+    function setBack() {
+        s.clickPlaying = false;
+        s.clicked = false;
+        s.playing = false;
+    }
+
+    function setTween() {
+        s.isTweening = false;
+    }
+
+    function buildTransPoints() {
+        if ( s.playing ) {
+            pointMove( $lines[0], transPointTL[0], s.speed*.5, 5, -15, Power2.easeOut );
+            pointMove( $lines[2], transPointTL[1], s.speed*.5, 5, 15, Power2.easeOut );
+        }
+    }     
+
+    init();
+
+}
+
+})(jQuery);
+
+$(document).ready(function() {
+var burger_btn = new $.burger_btn($('#burger_icon_wrapper'));
+});
+</script>
+  </body>
+</html>
